@@ -68,24 +68,31 @@ dropped_cols = [
         'koi_sage',
         ]
 df=df.drop(dropped_cols,axis=1)
+myDict = {'CONFIRMED':1,'FALSE POSITIVE':-1, 'CANDIDATE':0,'NOT DISPOSITIONED': 0}
+df=df.replace(myDict)
 
 #First I need to drop uncessary/problematic columns.
 #Then split remaining data into two categories by vetting status: DONE and 
 #We will be using the DONE candidates to train and test.
 #Drop the vetting status.
-candidates = df.loc[(df['koi_disposition'] == 'CANDIDATE') & (df['koi_disposition']  == 'NOT DISPOSITIONED') ]
-df = df.loc[(df['koi_disposition'] != 'CANDIDATE') & (df['koi_disposition']  != 'NOT DISPOSITIONED') ]
 
-myDict = {'CONFIRMED':1,'FALSE POSITIVE':-1}
-df=df.replace(myDict)
-print(df)
+candidates = df.loc[df['koi_disposition'] == 0]
+df = df.loc[df['koi_disposition'] != 0]
+
+
+
+
 
 
 df = df.fillna(df.mean())
 df.isna().any()
 
+candidates = candidates.fillna(candidates.mean())
+candidates.isna().any()
+
 X = df.drop('koi_disposition', axis=1)
 Y = df['koi_disposition']
+X_candidates = candidates.drop('koi_disposition', axis=1)
 validation_size = 0.20
 seed = 7 
 X_train, X_validation, Y_train, Y_validation = model_selection.train_test_split(X,Y, test_size = validation_size, random_state =seed)
@@ -94,6 +101,7 @@ X_train = scaler.fit_transform(X_train)
 X_validation = scaler.transform(X_validation)
 scoring = 'accuracy'
 
+"""
 models = []
 models.append(('Logistic Regression', LogisticRegression(solver='liblinear', multi_class='ovr')))
 models.append(('Linear Discriminant Analysis', LinearDiscriminantAnalysis()))
@@ -111,3 +119,13 @@ for name, model in models:
     names.append(name)
     msg = "%s: %f (%f)" % (name, cv_results.mean(), cv_results.std())
     print(msg)
+"""
+#Based on the results from above is seems that Classification and Regression Trees
+#Are the best machine learning algorithm for this task  
+model =  DecisionTreeClassifier()
+model.fit(X_train,Y_train)
+accuracy = model.score(X_validation,Y_validation)
+print(accuracy)
+#print(df)
+forecast = model.predict(X_candidates)
+print(forecast)
